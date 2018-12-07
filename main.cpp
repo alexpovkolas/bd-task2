@@ -29,7 +29,7 @@ void gen_test() {
 
 int main()
 {
-    gen_test();
+    //gen_test();
     ifstream in("input.bin", ios::binary);
     ofstream out("output_t.bin", ios::binary);
 
@@ -43,12 +43,12 @@ int main()
 
     int readBytes = 0;
     int chunk = 50000;
-    int chunk_count = 0;
+    int processed_bytes = 0;
     int carry = 0;
 
     while (readBytes < n_size + m_size) {
 
-        int n_last = n_size - chunk_count * chunk;
+        int n_last = n_size - processed_bytes;
         int n = 0;
         if (n_last > 0) {
             n = n_last >= chunk ? chunk : n_last;
@@ -57,13 +57,13 @@ int main()
 
         vector<unsigned char> a(n);
         if (n > 0) {
-            in.seekg(4 + n_size - chunk_count * chunk - n);
+            in.seekg(4 + n_size - processed_bytes - n);
             in.read((char*)a.data(), n);
         }
 
 
 
-        int m_last = m_size - chunk_count * chunk;
+        int m_last = m_size - processed_bytes;
         int m = 0;
         if (m_last > 0) {
             m = m_last >= chunk ? chunk : m_last;
@@ -72,7 +72,7 @@ int main()
 
         vector<unsigned char> b(m);
         //char b[10];
-        int m_offset = 4 + 4 + n_size + m_size - chunk_count * chunk - m;
+        int m_offset = 4 + 4 + n_size + m_size - processed_bytes - m;
         if (m > 0) {
             in.seekg(m_offset);
             in.read((char*)&b[0], m);
@@ -103,17 +103,17 @@ int main()
         //reverse(sum.begin(), sum.end());
 
         o_size += sum.size();
-        out.seekp(4 + chunk_count * chunk);
+        out.seekp(4 + processed_bytes);
         out.write((char *)sum.data(), sum.size());
 
         readBytes += n + m;
-        chunk_count++;
+        processed_bytes += sum.size();
     }
 
     if (carry != 0) {
         o_size++;
-        out.seekp(4 + chunk_count * chunk);
-        out.write((char *)carry, 1);
+        out.seekp(4 + processed_bytes);
+        out.write((char *)&carry, 1);
     }
 
     out.seekp(0);
@@ -127,7 +127,7 @@ int main()
     out_final.write((char *)&o_size, 4);
 
     readBytes = 0;
-    chunk_count = 0;
+    int chunk_count = 0;
     while (readBytes < o_size) {
         int to_read = o_size - chunk_count * chunk > chunk ? chunk : o_size - chunk_count * chunk;
         vector<unsigned char> a(to_read);
